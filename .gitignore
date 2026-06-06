@@ -1,0 +1,37 @@
+# Unity standard ignore patterns
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+
+# Asset meta files for ignored folders
+/[Ll]ibrary.meta
+/[Tt]emp.meta
+/[Oo]bj.meta
+/[Bb]uild.meta
+/[Bb]uilds.meta
+/[Ll]ogs.meta
+/[Uu]ser[Ss]ettings.meta
+
+# Visual Studio / VS Code
+.vscode/
+.vs/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# PlasticSCM
+.plastic/
+
+# OS specific
+.DS_Store
+Thumbs.db
+Desktop.ini

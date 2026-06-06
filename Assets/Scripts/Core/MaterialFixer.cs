@@ -1,0 +1,127 @@
+using UnityEngine;
+
+public static class MaterialFixer
+{
+    private static Shader urpLitShader;
+    private static Shader urpParticleUnlitShader;
+    private static Material defaultParticleMat;
+
+    public static void Fix(GameObject go)
+    {
+        if (urpLitShader == null) urpLitShader = Shader.Find("Universal Render Pipeline/Lit");
+        if (urpParticleUnlitShader == null) urpParticleUnlitShader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+
+        foreach (var renderer in go.GetComponentsInChildren<Renderer>(true))
+        {
+            bool isParticle = renderer is ParticleSystemRenderer;
+
+            Material[] mats = renderer.materials;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                // Fix: If material is missing, assign a default to stop "orange spalts"
+                if (mats[i] == null)
+                {
+                    mats[i] = GetDefaultVFXMaterial();
+                    continue;
+                }
+                
+                FixMaterial(mats[i], isParticle);
+            }
+            renderer.materials = mats;
+        }
+
+        // Support for VFX Graph (if present)
+        #if UNITY_VISUAL_EFFECTS
+        foreach (var vfx in go.GetComponentsInChildren<UnityEngine.VFX.VisualEffect>(true))
+        {
+            // VFX Graph usually handles its own materials, but we can log it
+            Debug.Log($"[MaterialFixer] Noted VFX Graph: {vfx.name}");
+        }
+        #endif
+    }
+
+    public static void FixMaterial(Material mat, bool isParticle = false)
+    {
+        if (urpLitShader == null) urpLitShader = Shader.Find("Universal Render Pipeline/Lit");
+        if (urpParticleUnlitShader == null) urpParticleUnlitShader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+        
+        if (mat == null) return;
+
+        string sName = mat.shader.name;
+        
+        // Determine best target shader
+        bool useParticleShader = isParticle || sName.Contains("Particle") || sName.Contains("Additive") || sName.Contains("VFX") || sName.Contains("Lightning");
+        Shader targetShader = useParticleShader ? urpParticleUnlitShader : urpLitShader;
+
+        if (targetShader == null) targetShader = urpLitShader; 
+        if (targetShader == null) return;
+
+        // CRITICAL: Re-apply textures even if already URP, to fix broken/pink materials
+        Texture mainTex = GetMainTexture(mat);
+        Color color = mat.HasProperty("_Color") ? mat.color : Color.white;
+        if (mat.HasProperty("_TintColor")) color = mat.GetColor("_TintColor");
+        Texture normal = mat.HasProperty("_BumpMap") ? mat.GetTexture("_BumpMap") : null;
+        
+        // Swap shader
+        mat.shader = targetShader;
+        
+        // Re-assign to URP specific slots
+        if (mainTex != null) 
+        {
+            mat.SetTexture("_BaseMap", mainTex);
+            mat.SetTexture("_MainTex", mainTex); // Keep for compatibility
+        }
+        mat.SetColor("_BaseColor", color);
+        if (normal != null) mat.SetTexture("_BumpMap", normal);
+
+        if (useParticleShader)
+        {
+            // Force transparency for VFX
+            mat.SetInt("_Surface", 1); // Transparent
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            
+            if (sName.Contains("Additive"))
+            {
+                mat.SetFloat("_Blend", 1); // Additive
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            }
+            else
+            {
+                mat.SetFloat("_Blend", 0); // Alpha
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            }
+        }
+        else
+        {
+            // Standard object handling
+            if (sName.Contains("Transparent") || sName.Contains("Cutout") || sName.Contains("Alpha") || mat.IsKeywordEnabled("_ALPHATEST_ON"))
+            {
+                mat.SetFloat("_AlphaClip", 1f);
+                mat.SetFloat("_Cutoff", 0.5f);
+                mat.EnableKeyword("_ALPHATEST_ON");
+            }
+            mat.SetFloat("_Smoothness", 0.2f);
+        }
+    }
+
+    private static Texture GetMainTexture(Material mat)
+    {
+        if (mat.HasProperty("_BaseMap") && mat.GetTexture("_BaseMap") != null) return mat.GetTexture("_BaseMap");
+        if (mat.HasProperty("_MainTex") && mat.GetTexture("_MainTex") != null) return mat.GetTexture("_MainTex");
+        return mat.mainTexture;
+    }
+
+    private static Material GetDefaultVFXMaterial()
+    {
+        if (defaultParticleMat == null)
+        {
+            defaultParticleMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            defaultParticleMat.name = "AutoGeneratedVFXMat";
+            defaultParticleMat.SetColor("_BaseColor", Color.white);
+            defaultParticleMat.SetInt("_Surface", 1); // Transparent
+        }
+        return defaultParticleMat;
+    }
+}

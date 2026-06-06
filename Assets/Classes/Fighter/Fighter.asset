@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59a8c9423356d584688b25f5e32432ae, type: 3}
+  m_Name: Fighter
+  m_EditorClassIdentifier: Assembly-CSharp::FighterClassSO
+  className: Fighter
+  maxHealth: 180
+  baseMovementSpeed: 6.5
+  sprintMultiplier: 1.6
+  jumpHeight: 1.6
+  attackCooldown: 0.7
+  referenceAnimSpeed: 5
+  maxMana: 60
+  manaRegenRate: 3
+  abilityManaCost: 1
+  abilityCooldown: 2
+  maxStamina: 150
+  staminaRegenRate: 10
+  staminaSprintCost: 20
+  manaDrainPerSecond: 1
+  healthRegenRate: 2
+  outOfCombatDelay: 5
+  characterModelPrefab: {fileID: 1348249380158228129, guid: 5b0d022d5910d6740a848c296eac1062, type: 3}
+  modelScale: 0.5
+  modelOffset: {x: 0, y: 0, z: 0}
+  vfxHeightOffset: 1.2
+  classIcon: {fileID: 0}
+  weaponPrefab: {fileID: 6013990982369288243, guid: 5ffa21eac0be47c409e0bab4eea08790, type: 3}
+  handBone: 18
+  weaponPositionOffset: {x: 0, y: 0, z: 0}
+  weaponRotationOffset: {x: 0, y: 0, z: 0}
+  attackVFX: {fileID: 5503505460791601945, guid: 74c549d1b06b6b140a1fd9536eea637f, type: 3}
+  abilityVFX: {fileID: 158789456559184324, guid: 87167b19fb4a32a4e8e4f2c5f40a40b3, type: 3}
+  ultimateVFX: {fileID: 1205478487176026167, guid: 8436419d5cd706242bb810378b8a8835, type: 3}
+  attackRange: 1.5
+  cleaveRange: 3
+  damage: 10
+  spinSpeed: 1500
+  whirlwindRadius: 5
+  whirlwindDamage: 15
