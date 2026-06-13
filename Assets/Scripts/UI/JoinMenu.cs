@@ -8,13 +8,18 @@ using System.Linq;
 public class JoinMenu : MonoBehaviour
 {
     [Header("Panels")]
+    [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject lobbyPanel; 
     [SerializeField] private GameObject classSelectionPanel;
+    [SerializeField] private GameObject creditsPanel;
+    [SerializeField] private GameObject controlsPanel;
+    [SerializeField] private GameObject characterInfoPanel;
 
     [Header("UI Elements")]
     [SerializeField] private GameObject startGameButton;
     [SerializeField] private Text statusText; 
-
+    [SerializeField] private AudioClip clickSFX;
+    [SerializeField] private AudioClip lobbyMusic;
     private bool keyboardP1Used = false;
     private bool keyboardP2Used = false;
 
@@ -23,21 +28,147 @@ public class JoinMenu : MonoBehaviour
 
     private void Awake()
     {
-        // Ensure only one JoinMenu exists
-        if (FindObjectsByType<JoinMenu>().Length > 1)
+        // JoinMenu should NOT be persistent because its UI panels are destroyed on scene change.
+        // If it were persistent, it would lose its references to the UI objects!
+
+        // Destroy any lingering PlayerInputManager from a previous run to prevent duplicate managers 
+        // causing Split-Screen camera conflicts.
+        var managers = FindObjectsByType<PlayerInputManager>(FindObjectsSortMode.None);
+        if (managers.Length > 1)
         {
-            Destroy(gameObject);
-            return;
+            foreach (var m in managers)
+            {
+                if (m.gameObject.scene.name == "DontDestroyOnLoad")
+                {
+                    Destroy(m.gameObject);
+                }
+            }
         }
-        DontDestroyOnLoad(gameObject);
     }
 
     private void Start()
     {
+        // Full cleanup when entering the Main Menu
+        CleanupPersistentObjects();
+        
+        // Force Cursor to be visible and unlocked for Menu navigation
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        ShowMainMenu();
+    }
+
+    private void CleanupPersistentObjects()
+    {
+        // 1. Destroy any persistent PlayerInput objects from the previous run
+        PlayerInput[] players = FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
+        foreach (var p in players)
+        {
+            Destroy(p.gameObject);
+        }
+
+        // Also destroy their game objects explicitly just in case
+        var playerControllers = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+        foreach (var pc in playerControllers)
+        {
+            Destroy(pc.gameObject);
+        }
+
+        // 2. Clear our localized list
+        finalizedPlayers.Clear();
+        currentPlayerSelecting = null;
+        keyboardP1Used = false;
+        keyboardP2Used = false;
+
+        // 3. Reset PlayerInputManager if it's already there
+        if (PlayerInputManager.instance != null)
+        {
+            PlayerInputManager.instance.EnableJoining();
+            PlayerInputManager.instance.splitScreen = false; // Disable Unity's auto split-screen because we handle it
+        }
+
+        if (SoundManager.Instance != null && lobbyMusic != null)
+        {
+            SoundManager.Instance.PlayMusic(lobbyMusic);
+        }
+    }
+
+    // --- Navigation Methods ---
+
+    public void ShowMainMenu()
+    {
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+        if (lobbyPanel != null) lobbyPanel.SetActive(false);
+        if (classSelectionPanel != null) classSelectionPanel.SetActive(false);
+        if (creditsPanel != null) creditsPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
+        if (characterInfoPanel != null) characterInfoPanel.SetActive(false);
+
+        if (PlayerInputManager.instance != null)
+            PlayerInputManager.instance.DisableJoining();
+    }
+
+    public void ShowLobby()
+    {
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (lobbyPanel != null) lobbyPanel.SetActive(true);
         if (classSelectionPanel != null) classSelectionPanel.SetActive(false);
+        if (creditsPanel != null) creditsPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
+        if (characterInfoPanel != null) characterInfoPanel.SetActive(false);
+
+        if (PlayerInputManager.instance != null)
+            PlayerInputManager.instance.EnableJoining();
+
         UpdateLobbyUI();
+        PlayClickSound();
     }
+
+    public void ShowCredits()
+    {
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (lobbyPanel != null) lobbyPanel.SetActive(false);
+        if (classSelectionPanel != null) classSelectionPanel.SetActive(false);
+        if (creditsPanel != null) creditsPanel.SetActive(true);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
+        if (characterInfoPanel != null) characterInfoPanel.SetActive(false);
+        PlayClickSound();
+    }
+
+    public void ShowControls()
+    {
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (lobbyPanel != null) lobbyPanel.SetActive(false);
+        if (classSelectionPanel != null) classSelectionPanel.SetActive(false);
+        if (creditsPanel != null) creditsPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(true);
+        if (characterInfoPanel != null) characterInfoPanel.SetActive(false);
+        PlayClickSound();
+    }
+
+    public void ShowCharacterInfo()
+    {
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (lobbyPanel != null) lobbyPanel.SetActive(false);
+        if (classSelectionPanel != null) classSelectionPanel.SetActive(false);
+        if (creditsPanel != null) creditsPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
+        if (characterInfoPanel != null) characterInfoPanel.SetActive(true);
+        PlayClickSound();
+    }
+
+    public void QuitGame()
+    {
+        PlayClickSound();
+        Debug.Log("Quitting Game...");
+    #if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+    #else
+        Application.Quit();
+    #endif
+    }
+
+    // --- Joining Methods ---
 
     public void JoinKeyboardWASD()
     {
@@ -157,6 +288,12 @@ public class JoinMenu : MonoBehaviour
             if (Cursor.lockState == CursorLockMode.Locked) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
             else { Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; }
         }
+    }
+
+    public void PlayClickSound()
+    {
+        if (SoundManager.Instance != null && clickSFX != null)
+            SoundManager.Instance.PlaySound(clickSFX);
     }
 
     private void UpdateLobbyUI()

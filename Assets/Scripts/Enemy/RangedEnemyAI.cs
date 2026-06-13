@@ -13,7 +13,7 @@ public class RangedEnemyAI : MonoBehaviour
     [Header("AI Parameters")]
     public float detectionRadius = 20f;
     public float shootingRadius = 12f;
-    public float tooCloseRadius = 5f; // Distance at which the enemy tries to back away
+    public float tooCloseRadius = 5f; 
     public int attackDamage = 15;
     public float fireRate = 2.0f;
     
@@ -30,20 +30,27 @@ public class RangedEnemyAI : MonoBehaviour
         animator = GetComponent<Animator>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
 
+        if (projectilePrefab == null)
+        {
+            projectilePrefab = Resources.Load<GameObject>("Prefabs/Fireball");
+            if (projectilePrefab == null) projectilePrefab = Resources.Load<GameObject>("Fireball");
+        }
+
+        // Snapping logic
         if (agent != null && !agent.isOnNavMesh)
         {
             NavMeshHit hit;
-            if (NavMesh.SamplePosition(transform.position, out hit, 2f, NavMesh.AllAreas))
+            if (NavMesh.SamplePosition(transform.position, out hit, 10f, NavMesh.AllAreas))
             {
-                transform.position = hit.position;
-                agent.enabled = false;
-                agent.enabled = true;
+                agent.Warp(hit.position);
             }
         }
     }
 
     void Update()
     {
+        if (agent == null || !agent.isOnNavMesh) return;
+
         switch (currentState)
         {
             case State.Idle:
@@ -59,14 +66,14 @@ public class RangedEnemyAI : MonoBehaviour
 
             case State.Patrol:
                 if (animator != null) animator.SetBool("IsMoving", true);
-                if (agent.isOnNavMesh && !agent.pathPending && agent.remainingDistance < 0.5f)
+                if (!agent.pathPending && agent.remainingDistance < 0.5f)
                 {
                     Vector3 randomDir = Random.insideUnitSphere * 10f;
                     randomDir += transform.position;
-                    NavMeshHit hit;
-                    if(NavMesh.SamplePosition(randomDir, out hit, 10f, 1))
+                    NavMeshHit navHit;
+                    if(NavMesh.SamplePosition(randomDir, out navHit, 10f, 1))
                     {
-                        agent.SetDestination(hit.position);
+                        agent.SetDestination(navHit.position);
                     }
                 }
                 CheckForPlayer();
@@ -76,13 +83,11 @@ public class RangedEnemyAI : MonoBehaviour
                 if (targetPlayer != null)
                 {
                     float dist = Vector3.Distance(transform.position, targetPlayer.position);
-                    
                     if (dist <= shootingRadius)
                     {
                         currentState = State.Attack;
                         return;
                     }
-
                     if (animator != null) animator.SetBool("IsMoving", true);
                     agent.SetDestination(targetPlayer.position);
 
@@ -98,32 +103,24 @@ public class RangedEnemyAI : MonoBehaviour
                 if (targetPlayer == null) { currentState = State.Idle; return; }
 
                 float currentDist = Vector3.Distance(transform.position, targetPlayer.position);
-                
-                // 1. Look at Player
                 transform.LookAt(new Vector3(targetPlayer.position.x, transform.position.y, targetPlayer.position.z));
 
-                // 2. Kiting Logic (Maintain distance)
                 if (currentDist < tooCloseRadius)
                 {
-                    // Too close! Back away
                     Vector3 backDir = (transform.position - targetPlayer.position).normalized;
                     Vector3 retreatPos = transform.position + backDir * 4f;
-                    
                     if (animator != null) animator.SetBool("IsMoving", true);
                     agent.SetDestination(retreatPos);
                 }
                 else if (currentDist > shootingRadius)
                 {
-                    // Too far! Go back to chasing
                     currentState = State.Chase;
                 }
                 else
                 {
-                    // Perfect distance - Stop and shoot
-                    if (agent.isOnNavMesh) agent.SetDestination(transform.position);
+                    agent.SetDestination(transform.position);
                     if (animator != null) animator.SetBool("IsMoving", false);
 
-                    // 3. Shooting Logic
                     if (Time.time >= lastFireTime + fireRate)
                     {
                         Shoot();
@@ -136,24 +133,20 @@ public class RangedEnemyAI : MonoBehaviour
 
     void Shoot()
     {
-        if (projectilePrefab == null) return;
+        if (projectilePrefab == null || targetPlayer == null) return;
         if (animator != null) animator.SetTrigger("Attack");
 
         Vector3 spawnPos = launchPoint != null ? launchPoint.position : transform.position + transform.forward + Vector3.up * 1.5f;
         Vector3 shootDir = (targetPlayer.position + Vector3.up - spawnPos).normalized;
 
         GameObject proj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(shootDir));
-        
         var projScript = proj.GetComponent<Projectile>();
         if (projScript == null) projScript = proj.AddComponent<Projectile>();
-        
-        // Setup projectile stats
-        // We set shooter to null so it doesn't try to add ultimate charge to an enemy
-        var rb = proj.GetComponent<Rigidbody>();
-        if (rb != null)
+        var rbProj = proj.GetComponent<Rigidbody>();
+        if (rbProj != null)
         {
-            rb.useGravity = false;
-            rb.linearVelocity = shootDir * 15f; // Slower than player fireball
+            rbProj.useGravity = false;
+            rbProj.linearVelocity = shootDir * 15f; 
         }
     }
 

@@ -1,0 +1,25 @@
+<size=150%><b>HERO CLASSES</b></size>
+
+<b>FIGHTER</b>
+<i>"The Unstoppable Force"</i>
+<b>Attack:</b> Heavy Greatsword swing.
+<b>Ability:</b> Dash — Quick gap closer and dodge.
+<b>Ultimate:</b> Berserk — Massively increased attack speed and power.
+
+<b>WIZARD</b>
+<i>"The Arcane Master"</i>
+<b>Attack:</b> Exploding Fireball.
+<b>Ability:</b> Mana Shield — Uses mana to absorb incoming damage.
+<b>Ultimate:</b> Meteor Shower — Massive AOE devastation from the sky.
+
+<b>ASSASSIN</b>
+<i>"The Shadow Blade"</i>
+<b>Attack:</b> Rapid Dual-Dagger strikes.
+<b>Ability:</b> Invisibility — Slip into the shadows to become untargetable.
+<b>Ultimate:</b> Bladestorm — A whirlwind of deadly steel hitting all nearby foes.
+
+<b>CLERIC</b>
+<i>"The Divine Protector"</i>
+<b>Attack:</b> Holy Scepter blast.
+<b>Ability:</b> Healing Aura — Restores HP to all nearby allies over time.
+<b>Ultimate:</b> Divine Light — Full health restoration for the whole team.

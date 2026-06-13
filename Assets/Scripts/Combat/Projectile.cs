@@ -14,10 +14,11 @@ public class Projectile : MonoBehaviour
     private HashSet<Health> affectedHealths = new HashSet<Health>();
     private bool exploded = false;
     private PlayerController shooter;
+    private float spawnTime;
 
     public void SetShooter(PlayerController p) => shooter = p;
 
-    void Start()
+    void Awake()
     {
         rb = GetComponent<Rigidbody>();
         if (rb == null) rb = gameObject.AddComponent<Rigidbody>();
@@ -36,10 +37,15 @@ public class Projectile : MonoBehaviour
         if (col == null)
         {
             var sc = gameObject.AddComponent<SphereCollider>();
-            sc.radius = 0.5f;
+            sc.radius = 0.35f; // Slightly smaller collider for better clearance
             col = sc;
         }
         col.isTrigger = true;
+    }
+
+    void Start()
+    {
+        spawnTime = Time.time;
 
         // Default AOE for Fireballs
         if (gameObject.name.ToLower().Contains("fireball") && explosionRadius < 0.1f)
@@ -47,8 +53,11 @@ public class Projectile : MonoBehaviour
             explosionRadius = 5f;
         }
 
-        // Force Velocity
-        rb.linearVelocity = transform.forward * speed;
+        // Force Velocity only if not already set by the shooter script
+        if (rb.linearVelocity.sqrMagnitude < 0.1f)
+        {
+            rb.linearVelocity = transform.forward * speed;
+        }
 
         Destroy(gameObject, lifetime);
     }
@@ -57,8 +66,15 @@ public class Projectile : MonoBehaviour
     {
         if (exploded) return;
 
-        if (other.CompareTag("Player") || other.GetComponent<Projectile>() != null) return;
-        if (other.isTrigger && !other.CompareTag("Enemy")) return;
+        // Grace period to prevent immediate self/ground collision (0.05s)
+        if (Time.time < spawnTime + 0.05f) return;
+
+        // Ignore self and other projectiles
+        if (other.GetComponent<Projectile>() != null) return;
+        if (shooter != null && (other.transform == shooter.transform || other.transform.IsChildOf(shooter.transform))) return;
+        
+        // If it's a trigger, only impact if it's a valid combat target (Enemy or Player)
+        if (other.isTrigger && !other.CompareTag("Enemy") && !other.CompareTag("Player")) return;
 
         // JUICE: Shake shooter's camera
         if (shooter != null && JuiceManager.Instance != null)
@@ -98,6 +114,8 @@ public class Projectile : MonoBehaviour
         Collider[] victims = Physics.OverlapSphere(transform.position, explosionRadius);
         foreach (var v in victims)
         {
+            // Don't hit the shooter during an explosion either
+            if (shooter != null && (v.transform == shooter.transform || v.transform.IsChildOf(shooter.transform))) continue;
             ApplyDamage(v.gameObject);
         }
     }
@@ -110,19 +128,23 @@ public class Projectile : MonoBehaviour
 
         if (health != null && !affectedHealths.Contains(health))
         {
-            if (health.isPlayer) return;
+            // PREVENTION: Prevent Friendly Fire (Players shouldn't hit players)
+            if (shooter != null && health.isPlayer) return;
 
             int finalDmg = damage;
-            if (shooter != null) finalDmg = Mathf.RoundToInt(damage * shooter.damageMultiplier);
-            health.TakeDamage(finalDmg);
-            affectedHealths.Add(health);
-
-            // Add Ultimate Charge to the shooter
-            if (shooter != null)
+            
+            // Player-specific logic
+            if (shooter != null) 
             {
+                finalDmg = Mathf.RoundToInt(damage * shooter.damageMultiplier);
+                
+                // Add Ultimate Charge to the shooter
                 var rs = shooter.GetComponent<ResourceSystem>();
                 if (rs != null) rs.AddUltimateCharge(5f); 
             }
+            
+            health.TakeDamage(finalDmg);
+            affectedHealths.Add(health);
         }
     }
 }

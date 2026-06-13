@@ -28,6 +28,9 @@ public class CombatSystem : MonoBehaviour
                     isHoldingAbility = true;
                     playerController.currentClass.ExecuteAbility(playerController, playerController.animator);
                     lastAbilityTime = Time.time;
+
+                    if (SoundManager.Instance != null && playerController.currentClass.abilitySFX != null)
+                        SoundManager.Instance.PlaySound(playerController.currentClass.abilitySFX);
                 }
             }
         }
@@ -47,6 +50,9 @@ public class CombatSystem : MonoBehaviour
             {
                 playerController.currentClass.ExecuteAttack(playerController, playerController.animator);
                 lastAttackTime = Time.time;
+
+                if (SoundManager.Instance != null && playerController.currentClass.attackSFX != null)
+                    SoundManager.Instance.PlaySound(playerController.currentClass.attackSFX);
             }
         }
     }
@@ -92,6 +98,9 @@ public class CombatSystem : MonoBehaviour
             {
                 playerController.currentClass.ExecuteUltimate(playerController, playerController.animator);
                 Debug.Log($"[Combat] {playerController.name} UNLEASHED ULTIMATE!");
+
+                if (SoundManager.Instance != null && playerController.currentClass.ultimateSFX != null)
+                    SoundManager.Instance.PlaySound(playerController.currentClass.ultimateSFX);
             }
             else
             {

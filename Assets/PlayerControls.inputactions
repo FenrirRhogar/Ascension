@@ -106,15 +106,6 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Discard",
-                    "type": "Button",
-                    "id": "f2a3b4c5-d6e7-48f8-a9b0-c1d2e3f4a5b6",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "ToggleCamera",
                     "type": "PassThrough",
                     "id": "a3b4c5d6-e7f8-49a9-b0c1-d2e3f4a5b6c7",
@@ -535,7 +526,7 @@
                 {
                     "name": "",
                     "id": "c6f7a8b9-c0d1-43e1-f2a3-b4c5d6e7f8a9",
-                    "path": "<Keyboard>/numpad7",
+                    "path": "<Keyboard>/7",
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardIJKL",
@@ -568,7 +559,7 @@
                 {
                     "name": "",
                     "id": "f6f7a8b9-c0d1-46e1-f2a3-b4c5d6e7f8a9",
-                    "path": "<Keyboard>/numpad8",
+                    "path": "<Keyboard>/8",
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardIJKL",
@@ -601,7 +592,7 @@
                 {
                     "name": "",
                     "id": "c7b8c9d0-e1f2-44f2-a3b4-c5d6e7f8a9b0",
-                    "path": "<Keyboard>/numpad9",
+                    "path": "<Keyboard>/9",
                     "interactions": "",
                     "processors": "",
                     "groups": "KeyboardIJKL",
@@ -617,39 +608,6 @@
                     "processors": "",
                     "groups": "Gamepad",
                     "action": "Slot3",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "e7b8c9d0-e1f2-46f2-a3b4-c5d6e7f8a9b0",
-                    "path": "<Keyboard>/g",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "KeyboardMouse",
-                    "action": "Discard",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "f7b8c9d0-e1f2-47f2-a3b4-c5d6e7f8a9b0",
-                    "path": "<Keyboard>/quote",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "KeyboardIJKL",
-                    "action": "Discard",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "a8c9d0e1-f2a3-43a3-b4c5-d6e7f8a9b0c1",
-                    "path": "<Gamepad>/leftStickPress",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Gamepad",
-                    "action": "Discard",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

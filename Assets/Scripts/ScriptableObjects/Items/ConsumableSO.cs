@@ -20,6 +20,10 @@ public abstract class ConsumableSO : ScriptableObject
     [Header("Rarity Settings")]
     public ItemRarity rarity = ItemRarity.Common;
 
+    [Header("SFX")]
+    public AudioClip pickupSFX;
+    public AudioClip useSFX;
+
     // Passes the PlayerController to mutate the specific player's state
     public abstract void UseItem(PlayerController player);
 }

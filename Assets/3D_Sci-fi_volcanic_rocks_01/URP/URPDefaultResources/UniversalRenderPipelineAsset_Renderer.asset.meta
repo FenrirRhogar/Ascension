@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6c1a423e9133b82469ffdeada851dc9f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 310065
+  packageName: 3D Volcanic Rocks
+  packageVersion: 1.0
+  assetPath: Assets/3D_Sci-fi_volcanic_rocks_01/URP/URPDefaultResources/UniversalRenderPipelineAsset_Renderer.asset
+  uploadId: 730028

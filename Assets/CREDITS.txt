@@ -1,0 +1,20 @@
+<size=150%><b>CREDITS</b></size>
+
+<b>DEVELOPED BY</b>
+Your Name / Team Name
+
+<b>ASSETS USED</b>
+AllSkyFree - Skyboxes and environment textures
+Casual Game Sounds U6 - Audio and Sound Effects
+Cartoon FX Remaster (JMO Assets) - Visual Effects
+Free Quick Effects Vol 1 (GabrielAguiarProductions) - Visual Effects
+Slash Effects FREE (Matthew Guz) - Combat Visual Effects
+Ultimate Animated Character Pack - Character models and animations
+Blink (Art) - Weapon models
+Mountain Terrain rocks and tree - Environment models
+PolyKebap - Potion models
+PolyRonin - Desert Village
+3D_Sci-fi_volcanic_rocks_01 - Environment models
+GVOZDY - Concrete Tombstone 3D game ready
+
+<b>THANK YOU FOR PLAYING!</b>

@@ -3,6 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 public class ProceduralTerrain : MonoBehaviour
 {
+    public BiomeType currentBiome = BiomeType.Forest;
     public int xSize = 50;
     public int zSize = 50;
     public float scale = 0.5f;
@@ -38,35 +39,50 @@ public class ProceduralTerrain : MonoBehaviour
         vertices = new Vector3[(xSize + 1) * (zSize + 1)];
         uvs = new Vector2[vertices.Length];
         colors = new Color[vertices.Length];
+        
+        bool isBossArena = LevelManager.CurrentLevel == 5;
 
         for (int i = 0, z = 0; z <= zSize; z++)
         {
             for (int x = 0; x <= xSize; x++)
             {
-                // Multi-octave noise for smoother, natural mountains
                 float height = 0;
-                float freq = noiseScale;
-                float amp = heightMultiplier;
-                float maxValue = 0;
                 
-                for (int octave = 0; octave < 3; octave++)
+                if (isBossArena)
                 {
-                    height += Mathf.PerlinNoise(x * freq, z * freq) * amp;
-                    maxValue += amp;
-                    freq *= 2.0f;
-                    amp *= 0.5f;
+                    // Create a large, mostly flat arena with raised edges to keep the player in
+                    float distFromCenter = Vector2.Distance(new Vector2(x, z), new Vector2(xSize / 2f, zSize / 2f));
+                    if (distFromCenter > (xSize * 0.4f)) 
+                    {
+                        // Steep walls at the very edge to act as an arena wall
+                        float t = distFromCenter - (xSize * 0.4f);
+                        height = t * t * 0.5f; 
+                        height = Mathf.Min(height, heightMultiplier);
+                    }
+                    else
+                    {
+                        // Slight noise in the center so it isn't perfectly flat
+                        height = Mathf.PerlinNoise(x * 0.1f, z * 0.1f) * 0.5f;
+                    }
                 }
-
-                // Normalize and apply a curve to create valleys
-                height = (height / maxValue) * heightMultiplier;
-                height = Mathf.Pow(height / heightMultiplier, 1.2f) * heightMultiplier;
-
-                // Flatten a central area for gameplay start
-                float distFromCenter = Vector2.Distance(new Vector2(x, z), new Vector2(xSize/2f, zSize/2f));
-                if (distFromCenter < 15f) 
+                else
                 {
-                    float t = distFromCenter / 15f;
-                    height *= (t * t);
+                    // Multi-octave noise for smoother, natural mountains
+                    float freq = noiseScale;
+                    float amp = heightMultiplier;
+                    float maxValue = 0;
+                    
+                    for (int octave = 0; octave < 3; octave++)
+                    {
+                        height += Mathf.PerlinNoise(x * freq, z * freq) * amp;
+                        maxValue += amp;
+                        freq *= 2.0f;
+                        amp *= 0.5f;
+                    }
+
+                    // Normalize and apply a curve to create valleys
+                    height = (height / maxValue) * heightMultiplier;
+                    height = Mathf.Pow(height / heightMultiplier, 1.2f) * heightMultiplier;
                 }
 
                 vertices[i] = new Vector3(x * scale - (xSize * scale / 2f), height, z * scale - (zSize * scale / 2f));
@@ -78,7 +94,7 @@ public class ProceduralTerrain : MonoBehaviour
             }
         }
 
-        // --- Calculate Slope-based Colors ---
+        // --- Calculate Splat Weights (R=Ground, G=Rock, B=Peak) ---
         for (int i = 0, z = 0; z <= zSize; z++)
         {
             for (int x = 0; x <= xSize; x++)
@@ -94,27 +110,11 @@ public class ProceduralTerrain : MonoBehaviour
                     slope = (Mathf.Abs(h - hRight) + Mathf.Abs(h - hUp)) / scale;
                 }
 
-                // Natural Mountain Palette
-                Color grass = new Color(0.3f, 0.5f, 0.2f); // Vibrant grass
-                Color rock = new Color(0.45f, 0.45f, 0.45f); // Granite gray
-                Color snow = new Color(0.95f, 0.95f, 1.0f); // Pure snow
+                float rockWeight = Mathf.Clamp01((slope - 1.2f) / 0.8f);
+                float peakWeight = Mathf.Clamp01((h - heightMultiplier * 0.7f) / (heightMultiplier * 0.2f));
+                float groundWeight = 1.0f - Mathf.Max(rockWeight, peakWeight);
 
-                Color finalColor;
-
-                if (slope > 1.8f) // Steep cliff
-                {
-                    finalColor = rock;
-                }
-                else if (h > heightMultiplier * 0.85f) // High peak
-                {
-                    finalColor = snow;
-                }
-                else // Valley
-                {
-                    finalColor = Color.Lerp(grass, rock, slope / 1.8f);
-                }
-
-                colors[i] = finalColor;
+                colors[i] = new Color(groundWeight, rockWeight, peakWeight, 1.0f);
                 i++;
             }
         }

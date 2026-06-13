@@ -34,11 +34,13 @@ public class WizardClassSO : CharacterClassSO
             if (tip != null) return tip.position;
 
             // Fallback to the weapon's location (usually the hand)
-            return player.activeWeapon.transform.position + (Vector3.up * 0.2f);
+            // Increased vertical offset to 0.4f to ensure clearance
+            return player.activeWeapon.transform.position + (Vector3.up * 0.4f);
         }
 
         // Default fallback if no weapon is equipped
-        return player.transform.position + (Vector3.up * vfxHeightOffset) + (forwardDir * 1.2f);
+        // Increased forward offset to 1.5f to avoid player collider
+        return player.transform.position + (Vector3.up * vfxHeightOffset) + (forwardDir * 1.5f);
     }
 
     public override void ExecuteAbility(PlayerController player, Animator animator)
@@ -185,8 +187,21 @@ public class WizardClassSO : CharacterClassSO
         if (prefab == null) return;
         
         Vector3 spawnPos = GetMagicSpawnPoint(player, out Vector3 forwardDir);
+        
+        // Additional safety: ensure we aren't spawning too close to the floor
+        if (spawnPos.y < player.transform.position.y + 0.5f)
+        {
+             spawnPos.y = player.transform.position.y + vfxHeightOffset;
+        }
+
         Vector3 aimPoint = player.GetAimPoint();
         Vector3 fireDir = (aimPoint - spawnPos).normalized;
+
+        // If the aim point is too close (e.g. looking at feet), use forward direction to clear ground
+        if (Vector3.Distance(spawnPos, aimPoint) < 2.5f)
+        {
+            fireDir = forwardDir;
+        }
 
         GameObject proj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(fireDir));
         

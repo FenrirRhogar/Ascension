@@ -5,153 +5,135 @@ using System.Collections.Generic;
 public class EnemyHealthBar : MonoBehaviour
 {
     [Header("Settings")]
-    public Vector3 offset = new Vector3(0, 4f, 0);    
-    public Vector2 size = new Vector2(3.5f, 0.4f); // Made wider and thicker
+    public Vector3 offset = new Vector3(0, 3.5f, 0);    
+    public Vector2 size = new Vector2(2.5f, 0.25f); // Smaller and thinner
+    public float hideDelay = 4f; // Hide after 4 seconds of no activity
     
     private Health enemyHealth;
-    
-    private class PlayerUIInstance
-    {
-        public GameObject canvasGO;
-        public Slider slider;
-    }
-
-    private Dictionary<int, PlayerUIInstance> playerUIs = new Dictionary<int, PlayerUIInstance>();
+    private int lastHealth;
+    private float lastUpdateTime;
+    private Dictionary<int, Slider> playerSliders = new Dictionary<int, Slider>();
 
     void Start()
     {
         enemyHealth = GetComponent<Health>();
         if (enemyHealth == null) enemyHealth = GetComponentInParent<Health>();
-        if (enemyHealth == null) enemyHealth = GetComponentInChildren<Health>();
+        if (enemyHealth != null) lastHealth = enemyHealth.currentHealth;
     }
 
     public void ShowForPlayer(int playerIndex, int layer)
     {
-        if (playerUIs == null) return;
-
-        if (!playerUIs.ContainsKey(playerIndex))
+        lastUpdateTime = Time.time;
+        if (playerSliders.ContainsKey(playerIndex)) 
         {
-            CreateHealthBar(playerIndex, layer);
+            if (!playerSliders[playerIndex].gameObject.activeSelf)
+                playerSliders[playerIndex].gameObject.SetActive(true);
+            return;
         }
 
-        if (playerUIs.ContainsKey(playerIndex))
-        {
-            var instance = playerUIs[playerIndex];
-            if (instance != null && instance.canvasGO != null)
-            {
-                instance.canvasGO.SetActive(true);
-            }
-        }
+        CreateHealthBar(playerIndex, layer);
     }
 
     void CreateHealthBar(int playerIndex, int layer)
     {
-        PlayerUIInstance instance = new PlayerUIInstance();
+        // 1. Create Root Canvas
+        GameObject canvasGO = new GameObject($"HealthBar_P{playerIndex}", typeof(RectTransform));
+        canvasGO.transform.SetParent(this.transform);
+        canvasGO.transform.localPosition = offset;
+        canvasGO.transform.localRotation = Quaternion.identity;
+        canvasGO.transform.localScale = Vector3.one * 0.015f; 
+        
+        canvasGO.layer = 0; 
 
-        // 1. Create Canvas
-        instance.canvasGO = new GameObject($"HealthBar_P{playerIndex}", typeof(RectTransform));
-        if (instance.canvasGO == null) return;
-
-        instance.canvasGO.transform.SetParent(this.transform);
-        instance.canvasGO.transform.localPosition = offset;
-        instance.canvasGO.layer = layer;
-
-        Canvas canvas = instance.canvasGO.AddComponent<Canvas>();
+        Canvas canvas = canvasGO.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.WorldSpace;
+        canvasGO.AddComponent<CanvasScaler>();
         
-        RectTransform canvasRect = instance.canvasGO.GetComponent<RectTransform>();
-        canvasRect.sizeDelta = size;
-        canvasRect.localScale = Vector3.one * 0.5f; 
+        RectTransform canvasRect = canvasGO.GetComponent<RectTransform>();
+        canvasRect.sizeDelta = new Vector2(size.x * 50, size.y * 50);
 
-        // 2. Create Slider Root
-        GameObject sliderGO = new GameObject("Slider", typeof(RectTransform));
-        sliderGO.transform.SetParent(instance.canvasGO.transform, false);
-        sliderGO.layer = layer;
-        
-        instance.slider = sliderGO.AddComponent<Slider>();
-        RectTransform sliderRect = sliderGO.GetComponent<RectTransform>();
-        sliderRect.anchorMin = Vector2.zero;
-        sliderRect.anchorMax = Vector2.one;
-        sliderRect.sizeDelta = Vector2.zero;
-
-        // 3. Border (White Outline)
-        GameObject borderGO = new GameObject("Border", typeof(RectTransform));
-        borderGO.transform.SetParent(sliderGO.transform, false);
-        borderGO.layer = layer;
-        Image borderImg = borderGO.AddComponent<Image>();
-        borderImg.color = Color.white;
-        RectTransform borderRect = borderGO.GetComponent<RectTransform>();
-        borderRect.anchorMin = Vector2.zero;
-        borderRect.anchorMax = Vector2.one;
-        borderRect.sizeDelta = Vector2.zero; // Match canvas size exactly
-
-        // 3.5 Background (Black interior)
+        // 2. Background
         GameObject bgGO = new GameObject("Background", typeof(RectTransform));
-        bgGO.transform.SetParent(sliderGO.transform, false);
-        bgGO.layer = layer;
+        bgGO.transform.SetParent(canvasGO.transform, false);
         Image bgImg = bgGO.AddComponent<Image>();
-        bgImg.color = new Color(0.05f, 0.05f, 0.05f, 0.95f); 
+        bgImg.color = new Color(0, 0, 0, 0.7f);
         RectTransform bgRect = bgGO.GetComponent<RectTransform>();
         bgRect.anchorMin = Vector2.zero;
         bgRect.anchorMax = Vector2.one;
-        bgRect.offsetMin = new Vector2(0.05f, 0.05f); // Inset by 0.05 units to show border
-        bgRect.offsetMax = new Vector2(-0.05f, -0.05f);
+        bgRect.sizeDelta = Vector2.zero;
 
-        // 4. Fill Area
+        // 3. Fill Area
         GameObject fillAreaGO = new GameObject("Fill Area", typeof(RectTransform));
-        fillAreaGO.transform.SetParent(sliderGO.transform, false);
-        fillAreaGO.layer = layer;
+        fillAreaGO.transform.SetParent(canvasGO.transform, false);
         RectTransform fillAreaRect = fillAreaGO.GetComponent<RectTransform>();
         fillAreaRect.anchorMin = Vector2.zero;
         fillAreaRect.anchorMax = Vector2.one;
-        fillAreaRect.offsetMin = new Vector2(0.05f, 0.05f); 
-        fillAreaRect.offsetMax = new Vector2(-0.05f, -0.05f);
+        fillAreaRect.sizeDelta = new Vector2(-2, -2); 
 
-        // 5. Fill
+        // 4. Fill
         GameObject fillGO = new GameObject("Fill", typeof(RectTransform));
         fillGO.transform.SetParent(fillAreaGO.transform, false);
-        fillGO.layer = layer;
         Image fillImg = fillGO.AddComponent<Image>();
-        fillImg.color = new Color(1f, 0.15f, 0.15f, 1f); // Vibrant red
+        fillImg.color = new Color(0.9f, 0.2f, 0.2f, 0.9f);
         RectTransform fillRect = fillGO.GetComponent<RectTransform>();
         fillRect.anchorMin = Vector2.zero;
-        fillRect.anchorMax = Vector2.one;
+        fillRect.anchorMax = new Vector2(1, 1);
         fillRect.sizeDelta = Vector2.zero;
 
-        instance.slider.fillRect = fillRect;
-        instance.slider.targetGraphic = fillImg;
-        instance.slider.minValue = 0;
-        instance.slider.maxValue = (enemyHealth != null) ? enemyHealth.MaxHealth : 100;
-        instance.slider.value = instance.slider.maxValue;
-        instance.slider.interactable = false;
+        // 5. Slider
+        Slider slider = canvasGO.AddComponent<Slider>();
+        slider.fillRect = fillRect;
+        slider.minValue = 0;
+        slider.maxValue = (enemyHealth != null) ? enemyHealth.MaxHealth : 100;
+        slider.value = slider.maxValue;
+        slider.interactable = false;
 
-        if (playerUIs != null) playerUIs[playerIndex] = instance;
+        playerSliders[playerIndex] = slider;
+        
+        foreach(Transform t in canvasGO.GetComponentsInChildren<Transform>()) t.gameObject.layer = canvasGO.layer;
     }
 
     void Update()
     {
-        if (enemyHealth == null || playerUIs == null) return;
-    
-        foreach (var kvp in playerUIs)
-        {
-            var instance = kvp.Value;
-            if (instance == null || instance.canvasGO == null || instance.slider == null) continue;
-            
-            // Sync value
-            instance.slider.value = enemyHealth.currentHealth;
+        if (enemyHealth == null) return;
 
-            // Face player camera
-            var players = UnityEngine.InputSystem.PlayerInput.all;
-            if (kvp.Key < players.Count && players[kvp.Key] != null)
+        // Auto-show if health changed
+        if (enemyHealth.currentHealth != lastHealth)
+        {
+            lastHealth = enemyHealth.currentHealth;
+            lastUpdateTime = Time.time;
+            foreach(var s in playerSliders.Values) 
+                if(!s.gameObject.activeSelf) s.gameObject.SetActive(true);
+        }
+
+        bool shouldHide = (Time.time - lastUpdateTime) > hideDelay;
+    
+        foreach (var kvp in playerSliders)
+        {
+            Slider slider = kvp.Value;
+            if (slider == null) continue;
+            
+            if (shouldHide) 
             {
-                Camera playerCam = players[kvp.Key].GetComponentInChildren<Camera>();
-                if (playerCam != null)
+                if (slider.gameObject.activeSelf) slider.gameObject.SetActive(false);
+                continue;
+            }
+
+            slider.value = enemyHealth.currentHealth;
+
+            var players = UnityEngine.InputSystem.PlayerInput.all;
+            foreach(var p in players)
+            {
+                if(p.playerIndex == kvp.Key)
                 {
-                    instance.canvasGO.transform.LookAt(instance.canvasGO.transform.position + playerCam.transform.rotation * Vector3.forward, playerCam.transform.rotation * Vector3.up);
+                    Camera cam = p.GetComponentInChildren<Camera>();
+                    if(cam != null)
+                    {
+                        slider.transform.LookAt(slider.transform.position + cam.transform.rotation * Vector3.forward, cam.transform.rotation * Vector3.up);
+                    }
+                    break;
                 }
             }
-            
-            if (!instance.canvasGO.activeSelf) instance.canvasGO.SetActive(true);
         }
     }
 }

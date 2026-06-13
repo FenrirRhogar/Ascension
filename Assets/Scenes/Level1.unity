@@ -160,6 +160,7 @@ GameObject:
   m_Component:
   - component: {fileID: 105050973}
   - component: {fileID: 105050972}
+  - component: {fileID: 105050974}
   m_Layer: 0
   m_Name: LevelManager
   m_TagString: Untagged
@@ -179,9 +180,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb6618966f901f24c946d678af4f5bf5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
-  obstaclePrefabs: []
   enemyPrefabs:
   - {fileID: 6007588452942558039, guid: eb8b66c89a5b27f4e91be81102e1b989, type: 3}
+  - {fileID: 4747830253311206619, guid: 5ed800e8892e5ba43b7996385bef2665, type: 3}
   hitTextPrefabs:
   - {fileID: 5339739117810204693, guid: 26e1cb216e3635e4a820f58a1118d6b9, type: 3}
   - {fileID: 119183615461286708, guid: 141e1779869c79845bd243610f187f47, type: 3}
@@ -189,6 +190,31 @@ MonoBehaviour:
   - {fileID: 6889676053574524597, guid: 1244a9e4f6193654989497ad418a287b, type: 3}
   - {fileID: 2883797502249945402, guid: 1e54877675f6e4a46ad7ca7c4d7a5bf6, type: 3}
   levelGatePrefab: {fileID: 504578711877344617, guid: 8b668caca875b114085ab15b5b48676e, type: 3}
+  reviveTombstonePrefab: {fileID: 866811275776521599, guid: 245645084b3aa0041b14ef0931424b59, type: 3}
+  forestProps:
+  - {fileID: 2881479668610909691, guid: d95ede5dc77030d41af620b7006593e1, type: 3}
+  - {fileID: 7833923683500900003, guid: 3baf9a05661f58b4da172ee5f5b140fe, type: 3}
+  - {fileID: 1844511393940878295, guid: 714668fd229713d49870dfca548dedc1, type: 3}
+  - {fileID: 1654020625963138219, guid: b5296331d5a448b47a069a00dd074b9e, type: 3}
+  - {fileID: 6011036630121576164, guid: 0ec1c69bd47ad864f96cc2b516f6cd4b, type: 3}
+  - {fileID: 2803505663424749585, guid: b273de0d6e5818a4cb3195ce4f376ccb, type: 3}
+  volcanoProps:
+  - {fileID: 7833923683500900003, guid: 3baf9a05661f58b4da172ee5f5b140fe, type: 3}
+  - {fileID: 3430947579886554867, guid: 60344d3811152f34a8f82e3b007c2cc6, type: 3}
+  frozenProps:
+  - {fileID: 1521319932559390546, guid: e1d075935d3fd6941befff0c9b2f470b, type: 3}
+  - {fileID: 1521319932559390546, guid: e1d075935d3fd6941befff0c9b2f470b, type: 3}
+  - {fileID: 1521319932559390546, guid: e1d075935d3fd6941befff0c9b2f470b, type: 3}
+  desertProps:
+  - {fileID: 1654020625963138219, guid: b5296331d5a448b47a069a00dd074b9e, type: 3}
+  - {fileID: 8274734962294016977, guid: 8d99185e17570a34980db737d1eb4cfd, type: 3}
+  - {fileID: 6607498677192992508, guid: 16fb34314974e0f4c9e7e5a3bd93d6fb, type: 3}
+  - {fileID: 8267427934229748759, guid: cce04f533c148314abf74aff71206ec7, type: 3}
+  autumnProps:
+  - {fileID: 1844511393940878295, guid: 714668fd229713d49870dfca548dedc1, type: 3}
+  - {fileID: 6011036630121576164, guid: 0ec1c69bd47ad864f96cc2b516f6cd4b, type: 3}
+  - {fileID: 2803505663424749585, guid: b273de0d6e5818a4cb3195ce4f376ccb, type: 3}
+  - {fileID: 889445777815560387, guid: 054bf5cf244ff2e4083cbf8eca205cf0, type: 3}
   potionPrefabs:
   - {fileID: 7859597006823311159, guid: fd584896507dc02459afb2c9e435cc52, type: 3}
   - {fileID: 7859597006823311159, guid: 29bb53247b17157488bc88943f8a1a55, type: 3}
@@ -203,11 +229,11 @@ MonoBehaviour:
   - {fileID: 8476828237768496633, guid: e6529870edd2eee4a912ed0dff3eef67, type: 3}
   - {fileID: 8515284304091221328, guid: d0fbef802cc089f41ad12c580ea6341f, type: 3}
   - {fileID: 5310963310368244162, guid: 6953f8e36cc472848bc00b5f0fffb7c3, type: 3}
-  artifactDropRatio: 0.5
-  mapSize: {x: 10, y: 10}
-  numberOfObstacles: 50
-  numberOfNPCs: 20
-  enemyScale: 0.5
+  globalPotionDropRatio: 1
+  globalArtifactDropRatio: 0.5
+  mapSize: {x: 500, y: 500}
+  obstacleDensity: 100
+  npcDensity: 15
   collisionMask:
     serializedVersion: 2
     m_Bits: 1
@@ -217,6 +243,8 @@ MonoBehaviour:
   - {fileID: 40129053}
   - {fileID: 1815387441}
   fallThreshold: -20
+  victorySFX: {fileID: 0}
+  levelMusic: {fileID: 8300000, guid: eeaf06b33dfd6ec4cb8b9fd799fb8ea7, type: 3}
 --- !u!4 &105050973
 Transform:
   m_ObjectHideFlags: 0
@@ -232,6 +260,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &105050974
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 105050971}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83f58897bd9c9ee4fb0be26c2e6110a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AtmosphereManager
+  directionalLight: {fileID: 0}
+  dayIntensity: 1.2
+  nightIntensity: 0.2
+  enableFog: 1
+  fogStartDay: 10
+  fogEndDay: 150
+  fogStartNight: 5
+  fogEndNight: 60
+  forestSky: {fileID: 2100000, guid: c56e28e54cac24b04ae3dd957d214534, type: 2}
+  forestNightSky: {fileID: 2100000, guid: aa78c8d403a8547fe86d1f74239e6b03, type: 2}
+  volcanicSky: {fileID: 2100000, guid: 7416536dbe0334cfd888dd1beb75a9fb, type: 2}
+  frozenSky: {fileID: 2100000, guid: 2d796ced94d61438fbab81b194038162, type: 2}
+  frozenNightSky: {fileID: 2100000, guid: 9af23ba5fa5364ff598888460e0e2759, type: 2}
+  desertSky: {fileID: 2100000, guid: b4f152e0498484391a9f0d5a1facf03b, type: 2}
+  autumnSky: {fileID: 2100000, guid: 8b7dd0809c7c6498789fa32a61eaa6cb, type: 2}
 --- !u!1 &481802083
 GameObject:
   m_ObjectHideFlags: 0

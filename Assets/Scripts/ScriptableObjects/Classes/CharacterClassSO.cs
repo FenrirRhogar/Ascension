@@ -43,6 +43,11 @@ public abstract class CharacterClassSO : ScriptableObject
     public GameObject attackVFX;
     public GameObject abilityVFX;
     public GameObject ultimateVFX;
+
+    [Header("SFX Clips")]
+    public AudioClip attackSFX;
+    public AudioClip abilitySFX;
+    public AudioClip ultimateSFX;
     
     // Primary Attack
     public abstract void ExecuteAttack(PlayerController player, Animator animator);

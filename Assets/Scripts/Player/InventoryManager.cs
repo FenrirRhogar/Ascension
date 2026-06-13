@@ -44,6 +44,9 @@ public class InventoryManager : MonoBehaviour
                 ArtifactManager am = GetComponent<ArtifactManager>();
                 if (am == null) am = gameObject.AddComponent<ArtifactManager>();
 
+                if (SoundManager.Instance != null && targetedItem.itemData.pickupSFX != null)
+                    SoundManager.Instance.PlaySound(targetedItem.itemData.pickupSFX);
+
                 targetedItem.itemData.UseItem(playerController);
 
                 Destroy(targetedItem.gameObject);
@@ -58,13 +61,17 @@ public class InventoryManager : MonoBehaviour
                 {
                     slots[i] = targetedItem.itemData;
                     string itemName = slots[i].itemName; 
+
+                    if (SoundManager.Instance != null && targetedItem.itemData.pickupSFX != null)
+                        SoundManager.Instance.PlaySound(targetedItem.itemData.pickupSFX);
+
                     Destroy(targetedItem.gameObject);
                     targetedItem = null;
                     Debug.Log($"[Inventory] Picked up {itemName} into Slot {i+1}");
                     return;
                 }
             }
-            Debug.Log("[Inventory] Inventory Full! Discard something first.");
+            Debug.Log("[Inventory] Inventory Full!");
         }
     }
 
@@ -83,25 +90,12 @@ public class InventoryManager : MonoBehaviour
         if (index < slots.Length && slots[index] != null)
         {
             Debug.Log($"[Inventory] Using {slots[index].itemName} from Slot {index+1}");
+            
+            if (SoundManager.Instance != null && slots[index].useSFX != null)
+                SoundManager.Instance.PlaySound(slots[index].useSFX);
+
             slots[index].UseItem(playerController);
             slots[index] = null; // Clear the slot
-        }
-    }
-
-    public void OnDiscard(InputValue value)
-    {
-        if (value.isPressed)
-        {
-            // Simple discard: Clear the first non-empty slot
-            for (int i = 0; i < slots.Length; i++)
-            {
-                if (slots[i] != null)
-                {
-                    Debug.Log($"[Inventory] Discarded {slots[i].itemName} from Slot {i+1}");
-                    slots[i] = null;
-                    return;
-                }
-            }
         }
     }
 }

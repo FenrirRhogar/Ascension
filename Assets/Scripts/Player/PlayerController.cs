@@ -57,6 +57,7 @@ public class PlayerController : MonoBehaviour
     private PlayerInput playerInput;
     private GameObject characterModel;
     public GameObject activeWeapon { get; private set; }
+    private Transform cleanupPool;
 
     // Stability: Use a follower strategy instead of parenting to avoid Prefab Variant crashes
     private List<GameObject> activeModels = new List<GameObject>();
@@ -71,7 +72,7 @@ public class PlayerController : MonoBehaviour
         if (playerInput != null)
         {
             playerIndex = playerInput.playerIndex;
-            myUIReportLayer = 20 + playerIndex;
+            myUIReportLayer = 6 + playerIndex; // Corrected: Match P1_UI (6) to P4_UI (9)
         }
 
         playerCamera = GetComponentInChildren<Camera>();
@@ -91,7 +92,7 @@ public class PlayerController : MonoBehaviour
 
             for (int i = 0; i < 4; i++)
             {
-                int layer = 20 + i;
+                int layer = 6 + i; // Corrected: Check layers 6-9
                 if (layer == myUIReportLayer)
                     playerCamera.cullingMask |= (1 << layer); 
                 else
@@ -103,6 +104,10 @@ public class PlayerController : MonoBehaviour
                 
             if (playerCamera.gameObject.GetComponent<SplitScreenCamera>() == null)
                 playerCamera.gameObject.AddComponent<SplitScreenCamera>();
+
+            // Ensure AudioListener exists on the camera
+            if (playerCamera.gameObject.GetComponent<AudioListener>() == null)
+                playerCamera.gameObject.AddComponent<AudioListener>();
 
             // Deduplicate HUD component
             var hud = GetComponent<PlayerHUD>();
@@ -127,12 +132,26 @@ public class PlayerController : MonoBehaviour
         StartCoroutine(InitializeClassRoutine(selectedClass));
     }
 
+    private void PrepareCleanupPool()
+    {
+        if (cleanupPool == null)
+        {
+            GameObject poolGO = new GameObject("DELETED_MODELS_POOL");
+            poolGO.SetActive(false);
+            cleanupPool = poolGO.transform;
+            cleanupPool.SetParent(this.transform);
+        }
+    }
+
     private System.Collections.IEnumerator InitializeClassRoutine(CharacterClassSO selectedClass)
     {
         // One frame delay to allow Unity to finish its current refresh cycle
         yield return null;
 
+        PrepareCleanupPool();
+
         // Cleanup the previous runtime class instance
+        // STABILITY: Never Destroy SOs at runtime in the Editor if they might be selected
         currentClass = null;
 
         currentClass = Instantiate(selectedClass);
@@ -150,18 +169,17 @@ public class PlayerController : MonoBehaviour
         var rootRenderer = GetComponent<MeshRenderer>();
         if (rootRenderer != null) rootRenderer.enabled = false;
         
-        // Surgical cleanup of previous model
+        // --- STABLE MODEL SWAP ---
         if (activeWeapon != null)
         {
-            Destroy(activeWeapon);
+            activeWeapon.transform.SetParent(cleanupPool);
             activeWeapon = null;
         }
 
         if (characterModel != null)
         {
-            characterModel.name = "DELETED_MODEL_CLEANUP";
-            characterModel.SetActive(false);
-            Destroy(characterModel);
+            characterModel.name = "OLD_MODEL_RETIRED";
+            characterModel.transform.SetParent(cleanupPool);
             characterModel = null;
         }
 
@@ -181,9 +199,9 @@ public class PlayerController : MonoBehaviour
                 Transform hand = animator.GetBoneTransform(currentClass.handBone);
                 if (hand != null)
                 {
-                    GameObject weapon = Instantiate(currentClass.weaponPrefab, hand);
-                    weapon.transform.localPosition = currentClass.weaponPositionOffset;
-                    weapon.transform.localRotation = Quaternion.Euler(currentClass.weaponRotationOffset);
+                    activeWeapon = Instantiate(currentClass.weaponPrefab, hand);
+                    activeWeapon.transform.localPosition = currentClass.weaponPositionOffset;
+                    activeWeapon.transform.localRotation = Quaternion.Euler(currentClass.weaponRotationOffset);
                 }
             }
         }
@@ -254,6 +272,7 @@ public class PlayerController : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < duration)
         {
+            if (!charController.enabled) yield break;
             float step = (distance / duration) * Time.deltaTime;
             charController.Move(dashDir * step);
             elapsed += Time.deltaTime;
@@ -282,7 +301,7 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (currentClass == null) return;
+        if (currentClass == null || !charController.enabled) return;
 
         UpdateHealthBarRaycast();
 
@@ -410,19 +429,42 @@ public class PlayerController : MonoBehaviour
         if (resourceSystem.GetComponent<InventoryManager>() != null)
             resourceSystem.GetComponent<InventoryManager>().SetTargetedItem(null);
 
-        // Force raycast to hit triggers so it can see the item colliders
-        if (Physics.Raycast(ray, out RaycastHit hit, 50f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide))
+        // Scan for all objects in a sphere around the crosshair
+        RaycastHit[] hits = Physics.SphereCastAll(ray, 0.5f, 50f, Physics.AllLayers, QueryTriggerInteraction.Collide);
+        
+        // Sort by distance
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (var hit in hits)
         {
+            // 1. Check for Enemies
             EnemyHealthBar hp = hit.collider.GetComponent<EnemyHealthBar>();
             if (hp == null) hp = hit.collider.GetComponentInParent<EnemyHealthBar>();
-            if (hp != null) hp.ShowForPlayer(playerIndex, myUIReportLayer);
+            
+            if (hp != null)
+            {
+                hp.ShowForPlayer(playerIndex, myUIReportLayer);
+                // Found our enemy, stop searching
+                break; 
+            }
 
+            // 2. Check for Items
             PickupItem item = hit.collider.GetComponent<PickupItem>();
             if (item == null) item = hit.collider.GetComponentInParent<PickupItem>();
             if (item != null)
             {
                 var inv = GetComponent<InventoryManager>();
                 if (inv != null) inv.SetTargetedItem(item);
+                // Found our item, stop searching
+                break;
+            }
+
+            // If we hit solid terrain and haven't found an enemy/item yet, 
+            // we should probably stop unless the spherecast 'caught' something slightly behind it.
+            if (!hit.collider.isTrigger && !hit.collider.CompareTag("Enemy") && !hit.collider.CompareTag("Player"))
+            {
+                // Continue searching a bit more in case an enemy is partially buried
+                continue; 
             }
         }
     }

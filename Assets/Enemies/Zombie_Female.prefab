@@ -52,6 +52,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Zombie_Female
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 247dc1fdf06f78641a5f9af0d9cbdb02, type: 3}
+      propertyPath: m_TagString
+      value: Enemy
+      objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 247dc1fdf06f78641a5f9af0d9cbdb02, type: 3}
       propertyPath: m_Controller
       value: 
@@ -59,5 +63,29 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 247dc1fdf06f78641a5f9af0d9cbdb02, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -4281088865540965320}
   m_SourcePrefab: {fileID: 100100000, guid: 247dc1fdf06f78641a5f9af0d9cbdb02, type: 3}
+--- !u!1 &6007588452942558039 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 247dc1fdf06f78641a5f9af0d9cbdb02, type: 3}
+  m_PrefabInstance: {fileID: 6890036906183888390}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &-4281088865540965320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6007588452942558039}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 920f476b71b082f4aa32fbbab35b699f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAI
+  currentState: 0
+  detectionRadius: 15
+  attackRadius: 2.5
+  attackDamage: 25

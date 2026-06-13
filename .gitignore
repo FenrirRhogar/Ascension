@@ -35,3 +35,11 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Documents and unnecessary files
+PROJECT_STATUS.md
+GAME_GUIDE.md
+design_document.tex
+assignment.txt
+*.pdf
+*.zip

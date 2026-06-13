@@ -26,9 +26,13 @@ MonoBehaviour:
   maxStamina: 110
   staminaRegenRate: 10
   staminaSprintCost: 20
+  manaDrainPerSecond: 10
+  healthRegenRate: 2
+  outOfCombatDelay: 5
   characterModelPrefab: {fileID: 5785758986415659176, guid: 9dfaab5f7dfd72a4ca9ea88c7d3816af, type: 3}
   modelScale: 0.5
   modelOffset: {x: 0, y: 0, z: 0}
+  vfxHeightOffset: 1.2
   classIcon: {fileID: 0}
   weaponPrefab: {fileID: 0}
   handBone: 18
@@ -37,6 +41,9 @@ MonoBehaviour:
   attackVFX: {fileID: 5503505460791601945, guid: 74c549d1b06b6b140a1fd9536eea637f, type: 3}
   abilityVFX: {fileID: 8593464584776411535, guid: b21d155ec7ea5a349a0e36106f913148, type: 3}
   ultimateVFX: {fileID: 0}
+  attackSFX: {fileID: 8300000, guid: d46323e22e74e46baa241cbf48c85671, type: 3}
+  abilitySFX: {fileID: 8300000, guid: 0c008ee3ee72a4362a35be25fa5de043, type: 3}
+  ultimateSFX: {fileID: 8300000, guid: ff5f85da24bc943d1abdc5760a22bc81, type: 3}
   healAmount: 15
   healRadius: 5
   damage: 15

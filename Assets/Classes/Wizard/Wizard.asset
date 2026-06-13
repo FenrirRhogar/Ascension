@@ -32,7 +32,7 @@ MonoBehaviour:
   characterModelPrefab: {fileID: 5916967132961481590, guid: cbd74132be4b42745b4ede7000db9bca, type: 3}
   modelScale: 0.5
   modelOffset: {x: 0, y: 0, z: 0}
-  vfxHeightOffset: 1
+  vfxHeightOffset: 0.5
   classIcon: {fileID: 0}
   weaponPrefab: {fileID: 0}
   handBone: 18
@@ -41,6 +41,9 @@ MonoBehaviour:
   attackVFX: {fileID: 8464950693656172981, guid: 83ad694f134ab954580473212156b35a, type: 3}
   abilityVFX: {fileID: 2705533495200665743, guid: e84c40719cee66744925cce01bef28fc, type: 3}
   ultimateVFX: {fileID: 0}
+  attackSFX: {fileID: 8300000, guid: b6428d4edb06344ba829da4edd9967c1, type: 3}
+  abilitySFX: {fileID: 8300000, guid: 35fbad8cdde724f11ba6481f1e64af71, type: 3}
+  ultimateSFX: {fileID: 8300000, guid: 7bef0064f8567430cac22499c6b93d4f, type: 3}
   fireballPrefab: {fileID: 389821699222927281, guid: 856f1f18fb8861d4499813c38a5963ae, type: 3}
   meteorRainPrefab: {fileID: 8400424712307853490, guid: 366377810aaf4fc4ab2be725a54c5712, type: 3}
   meteorImpactPrefab: {fileID: 3432958286849152088, guid: 87ee7299dd44ed747af24dbb91bcd33b, type: 3}

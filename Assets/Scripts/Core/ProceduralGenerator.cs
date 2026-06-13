@@ -3,322 +3,204 @@ using System.Collections.Generic;
 
 public class ProceduralGenerator : MonoBehaviour
 {
-    [Header("Prefabs")]
+    [Header("Assets")]
     public GameObject[] obstaclePrefabs;
     public GameObject[] npcPrefabs;
     public GameObject[] consumablePrefabs;
     public GameObject[] hitTextPrefabs;
     public GameObject levelGatePrefab;
-    
-    [Header("Counts")]
-    public int numberOfObstacles = 20;
-    public int numberOfNPCs = 5;
-    
-    [Header("Map Settings")]
-    public Vector2 mapSize = new Vector2(10f, 10f);
-    public float overlapCheckRadius = 1.5f;
-    public float enemyScale = 0.5f; 
+    public GameObject campfirePrefab;
+
+    [Header("Settings")]
+    public Vector2 mapSize = new Vector2(100f, 100f);
+    public int obstacleDensity = 50;
+    public int npcDensity = 10;
+    public int campfireDensity = 5;
     public LayerMask collisionMask;
-    public GameObject groundObject; 
+    public GameObject groundObject;
 
     public void RunGeneration()
     {
-        if (obstaclePrefabs != null && obstaclePrefabs.Length > 0)
-            GenerateNatureObjects(obstaclePrefabs, numberOfObstacles, "Obstacle");
-        else
-            GeneratePrimitives(PrimitiveType.Cube, numberOfObstacles, "Obstacle", Color.grey, 0.5f);
+        bool isBossLevel = LevelManager.CurrentLevel == 5;
 
-        // Scale enemy count: +3 enemies per level
-        int currentLevel = LevelManager.CurrentLevel;
-        int scaledNPCs = numberOfNPCs + ((currentLevel - 1) * 3);
+        // 0. Spawning Campfires (especially for Night levels)
+        if (campfirePrefab != null)
+        {
+            int count = (AtmosphereManager.Instance != null && AtmosphereManager.Instance.isNight) ? campfireDensity * 2 : campfireDensity;
+            SpawnGroup(new GameObject[] { campfirePrefab }, count, "LightSource");
+        }
 
-        if (npcPrefabs != null && npcPrefabs.Length > 0)
-            GenerateObjects(npcPrefabs, scaledNPCs, "Enemy", 0.1f);
-        else
-            GeneratePrimitives(PrimitiveType.Capsule, scaledNPCs, "Enemy", Color.red, 1.0f);
+        // 1. Spawning Obstacles
+        if (obstaclePrefabs != null) SpawnGroup(obstaclePrefabs, isBossLevel ? obstacleDensity / 4 : obstacleDensity, "Obstacle");
 
-        SpawnLevelGate();
+        // 2. Spawning Enemies
+        if (npcPrefabs != null) 
+        {
+            if (isBossLevel)
+            {
+                // Spawn a few minions and ONE massive Boss
+                SpawnGroup(npcPrefabs, 5, "Enemy");
+                SpawnBoss();
+            }
+            else
+            {
+                SpawnGroup(npcPrefabs, npcDensity + LevelManager.CurrentLevel * 2, "Enemy");
+            }
+        }
+
+        // 3. Spawning Gate
+        if (levelGatePrefab != null) SpawnLevelGate();
+    }
+
+    private void SpawnBoss()
+    {
+        Vector3 pos = GetRandomGroundPos();
+        if (pos.y < -90f) pos = new Vector3(0, 0, 0); // Fallback
+
+        GameObject selected = npcPrefabs[0]; // Just use the first enemy prefab as a base
+        GameObject boss = Instantiate(selected, pos, Quaternion.identity, this.transform);
+        boss.tag = "Enemy";
+        boss.name = "MOUNTAIN_TITAN_BOSS";
+        
+        // Massive Scale
+        boss.transform.localScale = Vector3.one * 3.0f;
+        boss.layer = 3; 
+        foreach (Transform child in boss.GetComponentsInChildren<Transform>(true)) child.gameObject.layer = 3;
+
+        MaterialFixer.Fix(boss);
+        InitializeComponents(boss, "Boss");
+    }
+
+    private void SpawnGroup(GameObject[] pool, int count, string tag)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 pos = GetRandomGroundPos();
+            if (pos.y < -90f) continue;
+
+            GameObject selected = pool[Random.Range(0, pool.Length)];
+            GameObject go = Instantiate(selected, pos, Quaternion.Euler(0, Random.Range(0, 360), 0), this.transform);
+            go.tag = tag;
+            
+            if (tag == "Enemy")
+            {
+                go.transform.localScale = Vector3.one * 0.5f;
+                go.layer = 3; // Assign to an empty layer (Layer 3 is empty in TagManager)
+                foreach (Transform child in go.GetComponentsInChildren<Transform>(true))
+                {
+                    child.gameObject.layer = 3;
+                }
+            }
+
+            if (tag == "Obstacle")
+            {
+                var tint = go.AddComponent<BiomeTint>();
+                tint.ApplyTint(LevelManager.GetCurrentBiome());
+            }
+
+            MaterialFixer.Fix(go);
+            InitializeComponents(go, tag);
+        }
     }
 
     private void SpawnLevelGate()
     {
-        if (levelGatePrefab == null)
+        for (int i = 0; i < 20; i++)
         {
-            Debug.LogError("[ProceduralGenerator] No Level Gate Prefab assigned in LevelManager!");
-            return;
-        }
+            // Spawn far away
+            float angle = Random.Range(0, 360) * Mathf.Deg2Rad;
+            float dist = mapSize.x * 0.4f;
+            Vector3 searchPos = new Vector3(Mathf.Cos(angle) * dist, 500f, Mathf.Sin(angle) * dist);
 
-        Vector3 finalSpawnPos = Vector3.zero;
-        bool foundSpot = false;
-
-        for (int i = 0; i < 50; i++) // Increased attempts
-        {
-            float angle = Random.Range(0f, Mathf.PI * 2);
-            float distance = Random.Range(mapSize.x * 0.35f, mapSize.x * 0.48f); 
-
-            float x = Mathf.Cos(angle) * distance;
-            float z = Mathf.Sin(angle) * distance;
-
-            Vector3 rayStart = new Vector3(x, 150f, z);
-            Vector3 tempPos = new Vector3(x, 0, z); 
-
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 300f))
+            if (Physics.Raycast(searchPos, Vector3.down, out RaycastHit hit, 1000f, collisionMask))
             {
-                tempPos = hit.point;
-            }
-
-            if (IsPositionClear(tempPos)) 
-            {
-                finalSpawnPos = tempPos;
-                foundSpot = true;
-                break;
+                GameObject gate = Instantiate(levelGatePrefab, hit.point, Quaternion.identity, this.transform);
+                gate.name = "LevelGate_EXIT";
+                var col = gate.GetComponent<Collider>();
+                if (col == null) col = gate.AddComponent<BoxCollider>();
+                col.isTrigger = true;
+                return;
             }
         }
+    }
 
-        // Failsafe: If we absolutely can't find a clear spot, force it somewhere
-        if (!foundSpot)
-        {
-            finalSpawnPos = GetRandomSurfacePoint();
-            Debug.LogWarning("[ProceduralGenerator] Forced gate spawn (ignoring overlaps).");
-        }
-
-        GameObject gate = Instantiate(levelGatePrefab, finalSpawnPos, Quaternion.Euler(0, Random.Range(0, 360), 0));
-        gate.name = "LevelGate_EXIT"; // Give it a clear name in the Hierarchy
-        gate.transform.SetParent(this.transform); // Put it under the generator
-
-        // Ensure it can be touched
-        var col = gate.GetComponent<Collider>();
-        if (col == null) col = gate.AddComponent<BoxCollider>();
-        col.isTrigger = true;
+    private Vector3 GetRandomGroundPos()
+    {
+        float rx = Random.Range(-mapSize.x * 0.45f, mapSize.x * 0.45f);
+        float rz = Random.Range(-mapSize.y * 0.45f, mapSize.y * 0.45f);
         
-        if (col is BoxCollider bc)
+        Ray ray = new Ray(new Vector3(rx, 500f, rz), Vector3.down);
+        if (Physics.Raycast(ray, out RaycastHit hit, 1000f, collisionMask))
         {
-            bc.size = new Vector3(4f, 4f, 4f); // Make sure the trigger is large enough to hit
+            return hit.point;
         }
-
-        Debug.Log($"[ProceduralGenerator] ➔ SUCCESS: Spawned Level Gate at {finalSpawnPos}");
+        return new Vector3(0, -100f, 0);
     }
 
-    void GenerateNatureObjects(GameObject[] prefabs, int targetCount, string tag)
+    private void InitializeComponents(GameObject go, string tag)
     {
-        int objectsSpawned = 0;
-        int attempts = 0;
-
-        while (objectsSpawned < targetCount && attempts < 2000)
+        if (tag == "Enemy" || tag == "Boss")
         {
-            attempts++;
-            Vector3 surfacePoint = GetRandomSurfacePoint();
-            Vector3 spawnPos = surfacePoint + new Vector3(0, -0.2f, 0);
+            if (go.GetComponent<UnityEngine.AI.NavMeshAgent>() == null) go.AddComponent<UnityEngine.AI.NavMeshAgent>();
+            if (go.GetComponent<EnemyAI>() == null && go.GetComponent<RangedEnemyAI>() == null) go.AddComponent<EnemyAI>();
+            
+            Health h = go.GetComponent<Health>();
+            if (h == null) h = go.AddComponent<Health>();
+            h.hitTextPrefabs = hitTextPrefabs;
 
-            if (IsPositionClear(spawnPos))
+            // --- TIME-BASED SCALING ---
+            // Base health + Level scaling + Time scaling (10 HP per second elapsed in the run)
+            int timeBonus = Mathf.FloorToInt(LevelManager.runTime * 10f);
+            
+            if (tag == "Boss")
             {
-                GameObject selectedPrefab = prefabs[Random.Range(0, prefabs.Length)];
-                
-                Quaternion randomRot = Quaternion.Euler(
-                    selectedPrefab.name.Contains("rock") ? Random.Range(-5, 5) : 0, 
-                    Random.Range(0, 360), 
-                    selectedPrefab.name.Contains("rock") ? Random.Range(-5, 5) : 0
-                );
-
-                GameObject go = Instantiate(selectedPrefab, spawnPos, randomRot, this.transform);
-                go.tag = tag;
-                
-                MaterialFixer.Fix(go);
-                
-                float randomScale = Random.Range(0.8f, 1.5f);
-                go.transform.localScale = Vector3.one * randomScale;
-
-                InitializeComponents(go, tag, selectedPrefab);
-                objectsSpawned++;
+                // Boss is massively stronger and scales harder with time
+                h.SetMaxHealth(5000 + (timeBonus * 3));
             }
-        }
-    }
-
-    void GenerateObjects(GameObject[] prefabs, int targetCount, string tag, float verticalOffset)
-    {
-        int objectsSpawned = 0;
-        int attempts = 0;
-
-        while (objectsSpawned < targetCount && attempts < 1000)
-        {
-            attempts++;
-            Vector3 surfacePoint = GetRandomSurfacePoint();
-            Vector3 spawnPos = surfacePoint + new Vector3(0, verticalOffset, 0);
-
-            if (IsPositionClear(spawnPos))
+            else
             {
-                GameObject selectedPrefab = LevelManager.GetWeightedRandomItem(prefabs);
-                Quaternion randomRot = Quaternion.Euler(0, Random.Range(0, 360), 0);
-                GameObject go = Instantiate(selectedPrefab, spawnPos, randomRot, this.transform);
-                go.tag = tag;
-                
-                MaterialFixer.Fix(go); 
-                
-                InitializeComponents(go, tag, selectedPrefab);
-                objectsSpawned++;
+                h.SetMaxHealth(200 + (LevelManager.CurrentLevel * 50) + timeBonus);
             }
-        }
-    }
-
-    bool IsPositionClear(Vector3 pos)
-    {
-        Collider[] colliders = Physics.OverlapSphere(pos, overlapCheckRadius, collisionMask);
-        foreach (var col in colliders)
-        {
-            if (groundObject == null || col.gameObject != groundObject)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    void InitializeComponents(GameObject go, string tag, GameObject sourcePrefab = null)
-    {
-        if (tag == "Enemy")
-        {
-            go.layer = LayerMask.NameToLayer("Default");
-            
-            go.transform.localScale = Vector3.one * enemyScale;
-
-            if (go.GetComponent<Collider>() == null && go.GetComponentInChildren<Collider>() == null)
-            {
-                var col = go.AddComponent<CapsuleCollider>();
-                col.center = new Vector3(0, 1f, 0);
-                col.height = 2f;
-                col.radius = 1.0f;
-            }
-
-            if (go.GetComponent<UnityEngine.AI.NavMeshAgent>() == null)
-                go.AddComponent<UnityEngine.AI.NavMeshAgent>();
-            
-            // --- AI Logic ---
-            // Only add the basic EnemyAI if the prefab doesn't already have its own AI script
-            if (go.GetComponent<EnemyAI>() == null && go.GetComponent<RangedEnemyAI>() == null)
-                go.AddComponent<EnemyAI>();
-                
-            // --- SCALING DIFFICULTY ---
-            int currentLevel = LevelManager.CurrentLevel;
-            float timeFactor = LevelManager.DifficultyFactor;
-            
-            EnemyAI ai = go.GetComponent<EnemyAI>();
-            if (ai != null)
-            {
-                // Base damage is 25. Increase by 25% per level, then multiply by time factor.
-                float baseDamage = 25f * (1f + (currentLevel - 1) * 0.25f);
-                ai.attackDamage = Mathf.RoundToInt(baseDamage * timeFactor); 
-                
-                // Base speed is handled by NavMeshAgent. Increase by 15% per level, then scale with the square root of time factor.
-                var agent = go.GetComponent<UnityEngine.AI.NavMeshAgent>();
-                if (agent != null) agent.speed *= (1f + (currentLevel - 1) * 0.15f) * Mathf.Sqrt(timeFactor); 
-            }
-            
-            Health health = go.GetComponent<Health>();
-            if (health == null)
-                health = go.AddComponent<Health>();
-            
-            health.hitTextPrefabs = hitTextPrefabs;
-            
-            // Base health is 200. Increase by 50% per level, then multiply by time factor.
-            float baseHealth = 200f * (1f + (currentLevel - 1) * 0.5f);
-            int scaledHealth = Mathf.RoundToInt(baseHealth * timeFactor);
-            health.SetMaxHealth(scaledHealth); 
 
             if (consumablePrefabs != null && consumablePrefabs.Length > 0)
             {
-                health.lootPrefabs = consumablePrefabs;
-                health.dropChance = 1.0f; 
+                h.lootPrefabs = consumablePrefabs;
+                h.dropChance = tag == "Boss" ? 1.0f : 0.3f; // Boss always drops loot
             }
 
-            if (go.GetComponent<EnemyHealthBar>() == null)
-                go.AddComponent<EnemyHealthBar>();
-        }
-        else if (tag == "Consumable")
-        {
-            if (sourcePrefab != null)
-                go.transform.localScale = sourcePrefab.transform.localScale;
-            else
-                go.transform.localScale = Vector3.one * 2.0f; 
+            if (go.GetComponent<EnemyHealthBar>() == null) go.AddComponent<EnemyHealthBar>();
+
+            // FORCE a CapsuleCollider if missing or on children only
+            var cap = go.GetComponent<CapsuleCollider>();
+            if (cap == null) cap = go.AddComponent<CapsuleCollider>();
             
-            if (go.GetComponent<Collider>() == null && go.GetComponentInChildren<Collider>() == null)
+            // Adjust collider based on scale
+            if (tag == "Boss")
             {
-                var col = go.AddComponent<SphereCollider>();
-                col.isTrigger = true;
-                col.radius = 1.0f; 
+                cap.center = new Vector3(0, 1f, 0); 
+                cap.height = 2f;
+                cap.radius = 0.5f;
             }
             else
             {
-                var existingCols = go.GetComponentsInChildren<Collider>();
-                foreach(var c in existingCols) c.isTrigger = true;
+                // Configure for 0.5 scale
+                cap.center = new Vector3(0, 1f, 0); 
+                cap.height = 2f;
+                cap.radius = 0.5f;
             }
-            
-            PickupItem spawnedPickup = go.GetComponent<PickupItem>();
-            if (spawnedPickup == null)
-            {
-                spawnedPickup = go.AddComponent<PickupItem>();
-            }
+            cap.isTrigger = false;
 
-            if (sourcePrefab != null)
-            {
-                PickupItem originalPickup = sourcePrefab.GetComponent<PickupItem>();
-                if (originalPickup != null && originalPickup.itemData != null)
-                {
-                    spawnedPickup.itemData = originalPickup.itemData;
-                }
-            }
+            // Ensure layer is Default (0) for standard physics interaction
+            go.layer = 0;
+            foreach (Transform t in go.GetComponentsInChildren<Transform>()) t.gameObject.layer = 0;
         }
         else if (tag == "Obstacle")
         {
             if (go.GetComponent<UnityEngine.AI.NavMeshObstacle>() == null)
             {
-                var obstacle = go.AddComponent<UnityEngine.AI.NavMeshObstacle>();
-                obstacle.carving = true;
+                var obs = go.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+                obs.carving = true;
             }
         }
-    }
-
-    void GeneratePrimitives(PrimitiveType type, int targetCount, string tag, Color color, float verticalOffset)
-    {
-        int objectsSpawned = 0;
-        int attempts = 0;
-
-        while (objectsSpawned < targetCount && attempts < 1000)
-        {
-            attempts++;
-            Vector3 surfacePoint = GetRandomSurfacePoint();
-            Vector3 spawnPos = surfacePoint + new Vector3(0, verticalOffset, 0);
-
-            if (IsPositionClear(spawnPos))
-            {
-                GameObject go = GameObject.CreatePrimitive(type);
-                go.transform.position = spawnPos;
-                go.transform.rotation = Quaternion.Euler(0, Random.Range(0, 360), 0);
-                go.transform.SetParent(this.transform);
-                go.tag = tag;
-                
-                var renderer = go.GetComponent<Renderer>();
-                if (renderer != null) renderer.material.color = color;
-
-                MaterialFixer.Fix(go);
-
-                InitializeComponents(go, tag);
-                objectsSpawned++;
-            }
-        }
-    }
-
-    Vector3 GetRandomSurfacePoint()
-    {
-        float x = Random.Range(-mapSize.x / 2f, mapSize.x / 2f);
-        float z = Random.Range(-mapSize.y / 2f, mapSize.y / 2f);
-        
-        Vector3 rayStart = new Vector3(x, 150f, z);
-
-        if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit hit, 300f))
-        {
-            return hit.point;
-        }
-
-        return new Vector3(x, 0, z);
     }
 }

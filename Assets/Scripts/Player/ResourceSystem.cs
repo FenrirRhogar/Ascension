@@ -116,4 +116,10 @@ public class ResourceSystem : MonoBehaviour
         }
         return false;
     }
+
+    public void ResetResources()
+    {
+        currentMana = maxMana;
+        currentStamina = maxStamina;
+    }
 }

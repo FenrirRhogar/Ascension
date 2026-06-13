@@ -11,7 +11,7 @@ public class EnemyAI : MonoBehaviour
     private Animator animator;
 
     [Header("AI Parameters")]
-    public float detectionRadius = 15f;
+    public float detectionRadius = 20f;
     public float attackRadius = 2.5f;
     public int attackDamage = 25;
     
@@ -20,28 +20,24 @@ public class EnemyAI : MonoBehaviour
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-        agent.speed *= 1.2f; // Make them faster
         animator = GetComponent<Animator>();
-        if (animator == null)
-        {
-            animator = GetComponentInChildren<Animator>();
-        }
+        if (animator == null) animator = GetComponentInChildren<Animator>();
 
-        // Ensure the agent is snapped to the NavMesh at start
+        // Snapping logic for stability
         if (agent != null && !agent.isOnNavMesh)
         {
             NavMeshHit hit;
-            if (NavMesh.SamplePosition(transform.position, out hit, 2f, NavMesh.AllAreas))
+            if (NavMesh.SamplePosition(transform.position, out hit, 10f, NavMesh.AllAreas))
             {
-                transform.position = hit.position;
-                agent.enabled = false;
-                agent.enabled = true;
+                agent.Warp(hit.position);
             }
         }
     }
 
     void Update()
     {
+        if (agent == null || !agent.isOnNavMesh) return;
+
         switch (currentState)
         {
             case State.Idle:
@@ -57,16 +53,14 @@ public class EnemyAI : MonoBehaviour
 
             case State.Patrol:
                 if (animator != null) animator.SetBool("IsMoving", true);
-                if (agent.isOnNavMesh && !agent.pathPending && agent.remainingDistance < 0.5f)
+                if (!agent.pathPending && agent.remainingDistance < 0.5f)
                 {
-                    // Generate a random Cartesian coordinate for the patrol route
-                    Vector3 randomDir = Random.insideUnitSphere * 8f;
+                    Vector3 randomDir = Random.insideUnitSphere * 10f;
                     randomDir += transform.position;
-                    
-                    NavMeshHit hit;
-                    if(NavMesh.SamplePosition(randomDir, out hit, 8f, 1))
+                    NavMeshHit navHit;
+                    if(NavMesh.SamplePosition(randomDir, out navHit, 10f, 1))
                     {
-                        agent.SetDestination(hit.position);
+                        agent.SetDestination(navHit.position);
                     }
                 }
                 CheckForPlayer();
@@ -78,24 +72,22 @@ public class EnemyAI : MonoBehaviour
                     if (animator != null) animator.SetBool("IsMoving", true);
                     agent.SetDestination(targetPlayer.position);
                     
-                    if (Vector3.Distance(transform.position, targetPlayer.position) <= attackRadius)
+                    float dist = Vector3.Distance(transform.position, targetPlayer.position);
+                    if (dist <= attackRadius)
                     {
                         currentState = State.Attack;
+                        stateTimer = 0f;
                     }
-                    else if (Vector3.Distance(transform.position, targetPlayer.position) > detectionRadius + 5f)
+                    else if (dist > detectionRadius + 5f)
                     {
                         targetPlayer = null;
                         currentState = State.Patrol;
                     }
                 }
-                else
-                {
-                    currentState = State.Patrol;
-                }
                 break;
 
             case State.Attack:
-                if (agent.isOnNavMesh) agent.SetDestination(transform.position); // Halt agent translation
+                agent.SetDestination(transform.position); 
                 if (animator != null) animator.SetBool("IsMoving", false);
                 
                 if (targetPlayer != null)
@@ -103,48 +95,32 @@ public class EnemyAI : MonoBehaviour
                     transform.LookAt(new Vector3(targetPlayer.position.x, transform.position.y, targetPlayer.position.z));
                     
                     stateTimer += Time.deltaTime;
-                    if (stateTimer > 1.0f) // Faster strikes (was 1.5f)
+                    if (stateTimer > 1.2f) 
                     {
                         if (animator != null) animator.SetTrigger("Attack");
-                        
-                        var playerHealth = targetPlayer.GetComponent<Health>();
-                        if (playerHealth != null)
-                        {
-                            playerHealth.TakeDamage(attackDamage);
-                        }
+                        var health = targetPlayer.GetComponent<Health>();
+                        if (health != null) health.TakeDamage(attackDamage);
                         stateTimer = 0f;
                     }
 
                     if (Vector3.Distance(transform.position, targetPlayer.position) > attackRadius)
-                    {
                         currentState = State.Chase;
-                    }
                 }
-                else
-                {
-                    currentState = State.Idle;
-                }
+                else currentState = State.Idle;
                 break;
         }
     }
 
     private void CheckForPlayer()
     {
-        // Query the physics engine for all potential targets
         Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius);
-        float closestDistance = Mathf.Infinity;
-
         foreach (Collider hit in hits)
         {
             if (hit.CompareTag("Player"))
             {
-                float dist = Vector3.Distance(transform.position, hit.transform.position);
-                if (dist < closestDistance)
-                {
-                    closestDistance = dist;
-                    targetPlayer = hit.transform;
-                    currentState = State.Chase;
-                }
+                targetPlayer = hit.transform;
+                currentState = State.Chase;
+                break;
             }
         }
     }

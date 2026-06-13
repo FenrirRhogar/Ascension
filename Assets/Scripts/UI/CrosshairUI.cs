@@ -15,7 +15,7 @@ public class CrosshairUI : MonoBehaviour
         
         Camera cam = GetComponent<Camera>();
         if (cam == null) cam = GetComponentInChildren<Camera>();
-        if (cam == null) return;
+        if (cam == null || !cam.enabled) return;
 
         // Calculate center based on camera pixel rect (handles split-screen)
         Rect pixelRect = cam.pixelRect;

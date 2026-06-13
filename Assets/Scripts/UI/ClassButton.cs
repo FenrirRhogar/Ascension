@@ -9,6 +9,7 @@ public class ClassButton : MonoBehaviour
     {
         if (joinMenu != null && classData != null)
         {
+            joinMenu.PlayClickSound();
             joinMenu.SelectClass(classData);
         }
     }

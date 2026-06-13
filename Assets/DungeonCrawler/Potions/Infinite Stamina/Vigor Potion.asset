@@ -17,6 +17,8 @@ MonoBehaviour:
   activateOnPickup: 0
   buffDuration: 10
   rarity: 0
+  pickupSFX: {fileID: 0}
+  useSFX: {fileID: 0}
   healthRestore: 0
   manaRestore: 0
   ultimateCharge: 0
@@ -24,5 +26,5 @@ MonoBehaviour:
   grantInfiniteStamina: 1
   healthRegenBonus: 0
   manaRegenBonus: 0
-  staminaRegenBonus: 0
+  staminaRegenBonus: 1000
   grantInfiniteMana: 0

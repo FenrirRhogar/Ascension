@@ -108,9 +108,10 @@ public static class MaterialFixer
 
     private static Texture GetMainTexture(Material mat)
     {
-        if (mat.HasProperty("_BaseMap") && mat.GetTexture("_BaseMap") != null) return mat.GetTexture("_BaseMap");
-        if (mat.HasProperty("_MainTex") && mat.GetTexture("_MainTex") != null) return mat.GetTexture("_MainTex");
-        return mat.mainTexture;
+        if (mat.HasProperty("_BaseMap")) return mat.GetTexture("_BaseMap");
+        if (mat.HasProperty("_MainTex")) return mat.GetTexture("_MainTex");
+        if (mat.HasProperty("_BaseColorMap")) return mat.GetTexture("_BaseColorMap"); // Common in some URP shaders
+        return null;
     }
 
     private static Material GetDefaultVFXMaterial()

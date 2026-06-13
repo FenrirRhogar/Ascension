@@ -301,7 +301,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5
+  m_Radius: 1
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
@@ -353,13 +353,13 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 2
-  m_Radius: 0.5
+  m_Height: 1
+  m_Radius: 0.25
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.01
   m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 1, z: 0}
+  m_Center: {x: 0, y: 0.5, z: 0}
 --- !u!114 &6362467309875554854
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -374,7 +374,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   currentClass: {fileID: 0}
   cameraPivot: {fileID: 4630143645703589244}
-  cameraHeight: 1.5
+  cameraHeight: 1.2
   cameraSideOffset: 1
   cameraVerticalOffset: 0.3
   cameraDistance: 3.5
@@ -414,6 +414,8 @@ MonoBehaviour:
   dropChance: 0.3
   hitTextPrefabs: []
   hitTextOffset: {x: 0, y: 2.5, z: 0}
+  hurtSFX: {fileID: 0}
+  deathSFX: {fileID: 0}
 --- !u!114 &402814531008255077
 MonoBehaviour:
   m_ObjectHideFlags: 0
