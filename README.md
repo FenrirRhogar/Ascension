@@ -6,7 +6,7 @@
 </p>
 
 ## 📜 Overview
-**Split-Screen Co-op Ascension** drops 2 to 4 players into a hostile, procedurally generated environment where movement, resource management, and combat are shared responsibilities. Work together to survive dynamic biomes, defeat waves of enemies, and reach the level gate to ascend! 
+**Split-Screen Co-op Ascension** drops 1 to 4 players into a hostile, procedurally generated environment where movement, resource management, and combat are shared responsibilities. Work together to survive dynamic biomes, defeat waves of enemies, and reach the level gate to ascend! 
 
 ## ✨ Key Features
 - **Team Synergy:** Success depends entirely on players watching each other's backs.
